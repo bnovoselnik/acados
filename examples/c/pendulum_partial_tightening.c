@@ -486,8 +486,6 @@ int main() {
     real_t *ppi[N];
     real_t *plam[N+1];
 
-    double *pt[N+1];
-
     double *lam_in[N+1];
     double *t_in[N+1];
     double *ux_in[N+1];
@@ -503,7 +501,6 @@ int main() {
 
         d_zeros(&ppi[ii], nx[ii+1], 1);
         d_zeros(&plam[ii], 2*nb[ii]+2*nb[ii], 1);
-        d_zeros(&pt[ii], 2*nb[ii]+2*ngg[ii], 1);
 
         d_zeros(&lam_in[ii], 2*nb[ii]+2*ngg[ii], 1);
         d_zeros(&t_in[ii], 2*nb[ii]+2*ngg[ii], 1);
@@ -512,7 +509,6 @@ int main() {
 
     d_zeros(&ppi[N], nx[N], 1);
     d_zeros(&plam[N], 2*nb[N]+2*nb[N], 1);
-    d_zeros(&pt[N], 2*nb[N]+2*ngg[N], 1);
 
     d_zeros(&lam_in[N], 2*nb[N]+2*ngg[N], 1);
     d_zeros(&t_in[N], 2*nb[N]+2*ngg[N], 1);
@@ -584,7 +580,6 @@ int main() {
     qp_out.u = pu;
     qp_out.pi = ppi;
     qp_out.lam = plam;
-    qp_out.t = pt;
 
     void *workspace = 0;
     void *mem = 0;
@@ -705,19 +700,16 @@ int main() {
       for (int_t j = 0; j < NU; j++) w[0*(NX+NU)+NX+j] += qp_out.u[0][j];
       // for (int_t j = 0; j < NX; j++) pi_n[0*NX+j] = qp_out.pi[0][j];
       for (int_t j = 0; j < 2*(NBX+NBU); j++) lam_n[0*2*(NBX+NBU)+j] = qp_out.lam[0][j] + GAMMA;
-      for (int_t j = 0; j < 2*(NBX+NBU); j++) t_n[0*2*(NBX+NBU)+j] = qp_out.t[0][j] + GAMMA;
 
       for (int_t i = 1; i < N; i++) {
           for (int_t j = 0; j < NX; j++) w[i*(NX+NU)+j] += qp_out.x[i][j];
           for (int_t j = 0; j < NU; j++) w[i*(NX+NU)+NX+j] += qp_out.u[i][j];
           // for (int_t j = 0; j < NX; j++) pi_n[0*NX+j] = qp_out.pi[0][j];
           for (int_t j = 0; j < 2*(NBX+NBU); j++) lam_n[i*2*(NBX+NBU)+j] = qp_out.lam[i][j]+ GAMMA;
-          for (int_t j = 0; j < 2*(NBX+NBU); j++) t_n[i*2*(NBX+NBU)+j] = qp_out.t[i][j]+ GAMMA;
       }
       for (int_t j = 0; j < NX; j++) w[N*(NX+NU)+j] += qp_out.x[N][j];
       // for (int_t j = 0; j < NX; j++) pi_n[0*NX+j] = qp_out.pi[0][j];
       for (int_t j = 0; j < 2*NBX; j++) lam_n[N*2*(NBX+NBU)+j] = qp_out.lam[N][j]+ GAMMA;
-      for (int_t j = 0; j < 2*NBX; j++) t_n[N*2*(NBX+NBU)+j] = qp_out.t[N][j]+ GAMMA;
 
       // for (int_t j = 0; j < NX; j++) w_cl[sim_iter*(NX+NU) + j] = w[j];
       // for (int_t j = 0; j < NU; j++) w_cl[sim_iter*(NX+NU) + NX + j] = w[j+NX];
@@ -786,16 +778,12 @@ int main() {
     for (ii = 0; ii < N; ii++) {
         free(ppi[ii]);
         free(plam[ii]);
-        free(pt[ii]);
-
         free(lam_in[ii]);
         free(t_in[ii]);
         free(ux_in[ii]);
     }
 
     free(plam[N]);
-    free(pt[N]);
-
     free(lam_in[N]);
     free(t_in[N]);
     free(ux_in[N]);

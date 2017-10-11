@@ -80,7 +80,7 @@ static void ocp_qp_condensing_hpipm_initialize_default_args(const ocp_qp_in *qp_
     args->res_b_max = 1e-8;
     args->res_d_max = 1e-8;
     args->res_m_max = 1e-8;
-    args->iter_max = 20;
+    args->iter_max = 50;
     args->alpha_min = 1e-8;
     args->mu0 = 1;
 
@@ -309,6 +309,7 @@ char *ocp_qp_condensing_hpipm_assign_memory(const ocp_qp_in *qp_in, void *args_,
     c_ptr += ipm_arg->memsize;
     d_set_default_dense_qp_ipm_arg(ipm_arg);
     ipm_arg->iter_max = args->iter_max;
+    ipm_arg->stat_max = args->iter_max;
     ipm_arg->alpha_min = args->alpha_min;
     ipm_arg->res_g_max = args->res_g_max;
     ipm_arg->res_b_max = args->res_b_max;

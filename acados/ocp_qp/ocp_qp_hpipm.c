@@ -28,6 +28,7 @@
 #include "blasfeo/include/blasfeo_common.h"
 #include "blasfeo/include/blasfeo_d_aux.h"
 #include "blasfeo/include/blasfeo_d_blas.h"
+#include "blasfeo/include/blasfeo_d_aux_ext_dep.h"
 #include "blasfeo/include/blasfeo_v_aux_ext_dep.h"
 
 #include "hpipm/include/hpipm_d_ocp_qp.h"
@@ -70,7 +71,7 @@ static void ocp_qp_hpipm_initialize_default_args(const ocp_qp_in *qp_in, ocp_qp_
     args->res_b_max = 1e-8;
     args->res_d_max = 1e-8;
     args->res_m_max = 1e-8;
-    args->iter_max = 20;
+    args->iter_max = 50;
     args->alpha_min = 1e-8;
     args->mu0 = 1;
 
@@ -224,6 +225,7 @@ char *ocp_qp_hpipm_assign_memory(const ocp_qp_in *qp_in, ocp_qp_hpipm_args *args
     c_ptr += ipm_arg->memsize;
     d_set_default_ocp_qp_ipm_arg(ipm_arg);
     ipm_arg->iter_max = args->iter_max;
+    ipm_arg->stat_max = args->iter_max;
     ipm_arg->alpha_min = args->alpha_min;
     ipm_arg->res_g_max = args->res_g_max;
     ipm_arg->res_b_max = args->res_b_max;

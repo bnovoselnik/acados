@@ -488,18 +488,15 @@ int main() {
     double *hu[N];
     double *hpi[N];
     double *hlam[N + 1];
-    double *ht[N + 1];
 
     for (ii = 0; ii < N; ii++) {
         d_zeros(&hx[ii], nxx[ii], 1);
         d_zeros(&hu[ii], nuu[ii], 1);
         d_zeros(&hpi[ii], nxx[ii + 1], 1);
         d_zeros(&hlam[ii], 2 * nbb[ii] + 2 * ngg[ii], 1);
-        d_zeros(&ht[ii], 2 * nbb[ii] + 2 * ngg[ii], 1);
     }
     d_zeros(&hx[N], nxx[N], 1);
     d_zeros(&hlam[N], 2 * nbb[N] + 2 * ngg[N], 1);
-    d_zeros(&ht[N], 2 * nbb[N] + 2 * ngg[N], 1);
 
     /************************************************
      * create the in and out struct
@@ -532,7 +529,6 @@ int main() {
     qp_out.u = hu;
     qp_out.pi = hpi;
     qp_out.lam = hlam;
-    qp_out.t = ht;  // XXX why also the slack variables ???
 
     /************************************************
      * solver arguments (fully sparse)
@@ -659,11 +655,9 @@ int main() {
         d_free(hu[ii]);
         d_free(hpi[ii]);
         d_free(hlam[ii]);
-        d_free(ht[ii]);
     }
     d_free(hx[N]);
     d_free(hlam[N]);
-    d_free(ht[N]);
 
     free(workspace);
     free(memory);

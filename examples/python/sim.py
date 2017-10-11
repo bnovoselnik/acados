@@ -25,3 +25,4 @@ simulation = reshape(concatenate(simulation), (-1, nx))
 plt.ion()
 plt.plot(time_grid, simulation)
 plt.legend(['p', 'theta', 'v', 'omega'])
+

@@ -27,7 +27,7 @@ endif()
 project(acados LANGUAGES C CXX)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_C_COMPILER_VERSION MATCHES "5")
-    add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
+    add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
 endif()
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -41,7 +41,7 @@ endif()
 
 # Set up build type
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release
+    set(CMAKE_BUILD_TYPE Debug
         CACHE STRING "Valid build types are: \
         Release (default), None, Debug, NoExternalLibs, RelWithDebInfo, MinSizeRel." FORCE)
 endif()
