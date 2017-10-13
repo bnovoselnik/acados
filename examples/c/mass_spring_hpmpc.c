@@ -620,6 +620,12 @@ int main() {
     printf("\nx = \n");
     for (ii = 0; ii <= N; ii++) d_print_mat(1, nxx[ii], hx[ii], 1);
 
+    printf("\nlam_b = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, nbb[ii], hlam_b[ii], 1);
+
+    printf("\nlam_c = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, ngg[ii], hlam_c[ii], 1);
+
     printf("\n");
     printf(" inf norm res: %e, %e, %e, %e, %e\n", inf_norm_res[0],
            inf_norm_res[1], inf_norm_res[2], inf_norm_res[3], inf_norm_res[4]);
@@ -674,6 +680,12 @@ int main() {
 
     printf("\nx = \n");
     for (ii = 0; ii <= N; ii++) d_print_mat(1, nxx[ii], hx[ii], 1);
+
+    printf("\nlam_b = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, nbb[ii], hlam_b[ii], 1);
+
+    printf("\nlam_c = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, ngg[ii], hlam_c[ii], 1);
 
     printf("\n");
     printf(" inf norm res: %e, %e, %e, %e, %e\n", inf_norm_res[0],

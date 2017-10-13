@@ -146,7 +146,8 @@ int main() {
     real_t *px[NN + 1];
     real_t *pu[NN + 1];
     real_t *ppi[NN];
-    real_t *plam[NN + 1];
+    real_t *plam_b[NN + 1];
+    real_t *plam_c[NN + 1];
     real_t *plb[NN + 1];
     real_t *pub[NN + 1];
     real_t *plg[NN + 1];
@@ -164,7 +165,8 @@ int main() {
     d_zeros(&px[0], nx[0], 1);
     d_zeros(&pu[0], nu[0], 1);
     d_zeros(&ppi[0], nx[1], 1);
-    d_zeros(&plam[0], 2 * nb[0] + 2 * nc[0], 1);
+    d_zeros(&plam_b[0], nb[0], 1);
+    d_zeros(&plam_c[0], nc[0], 1);
     plb[0] = px0;
     pub[0] = px0;
     pidxb[0] = idxb0;
@@ -182,13 +184,15 @@ int main() {
         d_zeros(&px[i], nx[i], 1);
         d_zeros(&pu[i], nu[i], 1);
         d_zeros(&ppi[i], nx[i + 1], 1);
-        d_zeros(&plam[i], 2*nb[i] + 2*nc[i], 1);
+        d_zeros(&plam_b[i], nb[i], 1);
+        d_zeros(&plam_c[i], nc[i], 1);
     }
     pQ[NN] = Q;
     d_zeros(&pq[NN], nx[NN], 1);
     d_zeros(&px[NN], nx[NN], 1);
     d_zeros(&pu[NN], nu[NN], 1);
-    d_zeros(&plam[NN], 2*nb[NN] + 2*nc[NN], 1);
+    d_zeros(&plam_b[NN], nb[NN], 1);
+    d_zeros(&plam_c[NN], nc[NN], 1);
     d_zeros(&pCx[NN], nc[NN], nx[NN]);
 
     // Allocate OCP QP variables
@@ -218,7 +222,8 @@ int main() {
     qp_out.x = px;
     qp_out.u = pu;
     qp_out.pi = ppi;
-    // qp_out.lam = plam; TODO(bnovoselnik): fix this
+    qp_out.lam_b = plam_b;
+    qp_out.lam_c = plam_c;
 
     ocp_qp_condensing_qpoases_args *qpoases_args =
         ocp_qp_condensing_qpoases_create_arguments(&qp_in);
@@ -314,11 +319,13 @@ int main() {
         d_free(px[i]);
         d_free(pu[i]);
         d_free(ppi[i]);
-        d_free(plam[i]);
+        d_free(plam_b[i]);
+        d_free(plam_c[i]);
     }
     d_free(pq[NN]);
     d_free(px[NN]);
-    d_free(plam[NN]);
+    d_free(plam_b[NN]);
+    d_free(plam_c[NN]);
 
     free(rk_opts.A_mat);
     free(rk_opts.b_vec);

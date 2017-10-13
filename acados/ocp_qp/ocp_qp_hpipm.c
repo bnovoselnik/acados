@@ -215,21 +215,6 @@ char *ocp_qp_hpipm_assign_memory(const ocp_qp_in *qp_in, ocp_qp_hpipm_args *args
     s_ptr = (s_ptr + 63) / 64 * 64;
     c_ptr = (char *)s_ptr;
 
-    // assign multipliers
-    for (int_t ii = 0; ii <= N; ii++) {
-        (*hpipm_memory)->hlam_lb[ii] = (double *) c_ptr;
-        c_ptr += nb[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_lg[ii] = (double *) c_ptr;
-        c_ptr += ng[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_ub[ii] = (double *) c_ptr;
-        c_ptr += nb[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_ug[ii] = (double *) c_ptr;
-        c_ptr += ng[ii]*sizeof(double);
-    }
-
     // ocp qp structure
     d_create_ocp_qp(N, nx, nu, nb, ng, ns, qp, c_ptr);
     c_ptr += qp->memsize;
@@ -251,6 +236,21 @@ char *ocp_qp_hpipm_assign_memory(const ocp_qp_in *qp_in, ocp_qp_hpipm_args *args
     // ipm workspace structure
     d_create_ocp_qp_ipm(qp, ipm_arg, ipm_workspace, c_ptr);
     c_ptr += ipm_workspace->memsize;
+
+    // assign multipliers
+    for (int_t ii = 0; ii <= N; ii++) {
+        (*hpipm_memory)->hlam_lb[ii] = (double *) c_ptr;
+        c_ptr += nb[ii]*sizeof(double);
+
+        (*hpipm_memory)->hlam_lg[ii] = (double *) c_ptr;
+        c_ptr += ng[ii]*sizeof(double);
+
+        (*hpipm_memory)->hlam_ub[ii] = (double *) c_ptr;
+        c_ptr += nb[ii]*sizeof(double);
+
+        (*hpipm_memory)->hlam_ug[ii] = (double *) c_ptr;
+        c_ptr += ng[ii]*sizeof(double);
+    }
 
     //
     for (int_t ii = 0; ii <= N; ii++) {
@@ -368,11 +368,11 @@ int ocp_qp_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     // combine multipliers
     for (kk = 0; kk <= N; kk++) {
         // combine multipliers for lb and ub
-        for (ii = 0; ii <= nb[kk]; ii++)
+        for (ii = 0; ii < nb[kk]; ii++)
             hlam_b[kk][ii] = hlam_lb[kk][ii] - hlam_ub[kk][ii];
 
         // combine multipliers for lg and ug
-        for (ii = 0; ii <= ng[kk]; ii++)
+        for (ii = 0; ii < ng[kk]; ii++)
             hlam_c[kk][ii] = hlam_lg[kk][ii] - hlam_ug[kk][ii];
     }
 

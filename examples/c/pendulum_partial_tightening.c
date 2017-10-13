@@ -485,6 +485,8 @@ int main() {
     pug[0] = ug0;
     real_t *ppi[N];
     real_t *plam[N+1];
+    real_t *plam_b[N+1];
+    real_t *plam_c[N+1];
 
     double *lam_in[N+1];
     double *t_in[N+1];
@@ -492,7 +494,9 @@ int main() {
 
     ii = 0;
     d_zeros(&ppi[ii], nx[ii+1], 1);
-    d_zeros(&plam[ii], 2*nb[ii]+2*nb[ii], 1);
+    d_zeros(&plam[ii], 2*nb[ii]+2*ngg[ii], 1);
+    d_zeros(&plam_b[ii], nb[ii], 1);
+    d_zeros(&plam_c[ii], ngg[ii], 1);
     for (ii = 0; ii < N; ii++) {
         pC[ii] = C;
         pD[ii] = D;
@@ -500,7 +504,9 @@ int main() {
         pug[ii] = ug;
 
         d_zeros(&ppi[ii], nx[ii+1], 1);
-        d_zeros(&plam[ii], 2*nb[ii]+2*nb[ii], 1);
+        d_zeros(&plam[ii], 2*nb[ii]+2*ngg[ii], 1);
+        d_zeros(&plam_b[ii], nb[ii], 1);
+        d_zeros(&plam_c[ii], ngg[ii], 1);
 
         d_zeros(&lam_in[ii], 2*nb[ii]+2*ngg[ii], 1);
         d_zeros(&t_in[ii], 2*nb[ii]+2*ngg[ii], 1);
@@ -508,7 +514,9 @@ int main() {
     }
 
     d_zeros(&ppi[N], nx[N], 1);
-    d_zeros(&plam[N], 2*nb[N]+2*nb[N], 1);
+    d_zeros(&plam[N], 2*nb[N]+2*ngg[N], 1);
+    d_zeros(&plam_b[N], nb[N], 1);
+    d_zeros(&plam_c[N], ngg[N], 1);
 
     d_zeros(&lam_in[N], 2*nb[N]+2*ngg[N], 1);
     d_zeros(&t_in[N], 2*nb[N]+2*ngg[N], 1);
@@ -521,7 +529,9 @@ int main() {
     // }
 
 
-    d_zeros(&plam[N], 2*nb[N]+2*nb[N], 1);
+    d_zeros(&plam[N], 2*nb[N]+2*ngg[N], 1);
+    d_zeros(&plam_b[N], nb[N], 1);
+    d_zeros(&plam_c[N], ngg[N], 1);
 
     pC[N] = CN;
     pD[N] = DN;
@@ -579,7 +589,8 @@ int main() {
     qp_out.x = px;
     qp_out.u = pu;
     qp_out.pi = ppi;
-    //qp_out.lam = plam; // TODO(bnovoselnik): fix this
+    qp_out.lam_b = plam_b;
+    qp_out.lam_c = plam_c;
 
     void *workspace = 0;
     void *mem = 0;
@@ -696,20 +707,29 @@ int main() {
 
       if (status == 2) printf("status = ACADOS_MINSTEP\n");
 
+      for (int_t k = 0; k <= N; k++) {
+          for (int_t i = 0; i < nb[k]; i++) {
+              if (plam_b[k][i] >= 0.0)
+                  plam[k][i] = plam_b[k][i];
+              else
+                  plam[k][i+nb[k]] = plam_b[k][i];
+          }
+      }
+
       // there is no x0 in the first stage
       for (int_t j = 0; j < NU; j++) w[0*(NX+NU)+NX+j] += qp_out.u[0][j];
       // for (int_t j = 0; j < NX; j++) pi_n[0*NX+j] = qp_out.pi[0][j];
-      //for (int_t j = 0; j < 2*(NBX+NBU); j++) lam_n[0*2*(NBX+NBU)+j] = qp_out.lam[0][j] + GAMMA; // TODO(bnovoselnik): fix this
+      for (int_t j = 0; j < 2*(NBX+NBU); j++) lam_n[0*2*(NBX+NBU)+j] = plam[0][j] + GAMMA;
 
       for (int_t i = 1; i < N; i++) {
           for (int_t j = 0; j < NX; j++) w[i*(NX+NU)+j] += qp_out.x[i][j];
           for (int_t j = 0; j < NU; j++) w[i*(NX+NU)+NX+j] += qp_out.u[i][j];
           // for (int_t j = 0; j < NX; j++) pi_n[0*NX+j] = qp_out.pi[0][j];
-          //for (int_t j = 0; j < 2*(NBX+NBU); j++) lam_n[i*2*(NBX+NBU)+j] = qp_out.lam[i][j]+ GAMMA; // TODO(bnovoselnik): fix this
+          for (int_t j = 0; j < 2*(NBX+NBU); j++) lam_n[i*2*(NBX+NBU)+j] = plam[i][j]+ GAMMA;
       }
       for (int_t j = 0; j < NX; j++) w[N*(NX+NU)+j] += qp_out.x[N][j];
       // for (int_t j = 0; j < NX; j++) pi_n[0*NX+j] = qp_out.pi[0][j];
-      //for (int_t j = 0; j < 2*NBX; j++) lam_n[N*2*(NBX+NBU)+j] = qp_out.lam[N][j]+ GAMMA; // TODO(bnovoselnik): fix this
+      for (int_t j = 0; j < 2*NBX; j++) lam_n[N*2*(NBX+NBU)+j] = plam[N][j]+ GAMMA;
 
       // for (int_t j = 0; j < NX; j++) w_cl[sim_iter*(NX+NU) + j] = w[j];
       // for (int_t j = 0; j < NU; j++) w_cl[sim_iter*(NX+NU) + NX + j] = w[j+NX];
@@ -778,12 +798,16 @@ int main() {
     for (ii = 0; ii < N; ii++) {
         free(ppi[ii]);
         free(plam[ii]);
+        free(plam_b[ii]);
+        free(plam_c[ii]);
         free(lam_in[ii]);
         free(t_in[ii]);
         free(ux_in[ii]);
     }
 
     free(plam[N]);
+    free(plam_b[N]);
+    free(plam_c[N]);
     free(lam_in[N]);
     free(t_in[N]);
     free(ux_in[N]);

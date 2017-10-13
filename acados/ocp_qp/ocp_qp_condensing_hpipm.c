@@ -321,12 +321,6 @@ char *ocp_qp_condensing_hpipm_assign_memory(const ocp_qp_in *qp_in, void *args_,
     d_create_dense_qp_ipm(qpd, ipm_arg, ipm_workspace, c_ptr);
     c_ptr += ipm_workspace->memsize;
 
-    //
-    for (int_t ii = 0; ii <= N; ii++) {
-        (*hpipm_memory)->hidxb_rev[ii] = (int_t *) c_ptr;
-        c_ptr += nb[ii]*sizeof(int_t);
-    }
-
     // assign multipliers
     for (int_t ii = 0; ii <= N; ii++) {
         (*hpipm_memory)->hlam_lb[ii] = (double *) c_ptr;
@@ -340,6 +334,12 @@ char *ocp_qp_condensing_hpipm_assign_memory(const ocp_qp_in *qp_in, void *args_,
 
         (*hpipm_memory)->hlam_ug[ii] = (double *) c_ptr;
         c_ptr += ng[ii]*sizeof(double);
+    }
+
+    //
+    for (int_t ii = 0; ii <= N; ii++) {
+        (*hpipm_memory)->hidxb_rev[ii] = (int_t *) c_ptr;
+        c_ptr += nb[ii]*sizeof(int_t);
     }
 
     return c_ptr;
@@ -468,11 +468,11 @@ int_t ocp_qp_condensing_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out,
     // combine multipliers
     for (kk = 0; kk <= N; kk++) {
         // combine multipliers for lb and ub
-        for (ii = 0; ii <= nb[kk]; ii++)
+        for (ii = 0; ii < nb[kk]; ii++)
             hlam_b[kk][ii] = hlam_lb[kk][ii] - hlam_ub[kk][ii];
 
         // combine multipliers for lg and ug
-        for (ii = 0; ii <= ng[kk]; ii++)
+        for (ii = 0; ii < ng[kk]; ii++)
             hlam_c[kk][ii] = hlam_lg[kk][ii] - hlam_ug[kk][ii];
     }
 

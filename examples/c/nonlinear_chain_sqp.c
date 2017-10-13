@@ -347,7 +347,8 @@ int main() {
             real_t *px[N + 1];
             real_t *pu[N];
             real_t *ppi[N];
-            real_t *plam[N + 1];
+            real_t *plam_b[N + 1];
+            real_t *plam_c[N + 1];
             real_t *pCx[N + 1];
             real_t *pCu[N];
             real_t *plc[N + 1];
@@ -363,7 +364,8 @@ int main() {
                 d_zeros(&px[i], nx[i], 1);
                 d_zeros(&pu[i], nu[i], 1);
                 d_zeros(&ppi[i], nx[i + 1], 1);
-                d_zeros(&plam[i], 2*nb[i] + 2*nc[i], 1);
+                d_zeros(&plam_b[i], nb[i], 1);
+                d_zeros(&plam_c[i], nc[i], 1);
                 d_zeros(&pCx[i], nc[i], nx[i]);
                 d_zeros(&pCu[i], nc[i], nu[i]);
                 d_zeros(&plc[i], nc[i], 1);
@@ -375,7 +377,8 @@ int main() {
             d_zeros(&plc[N], nc[N], 1);
             d_zeros(&puc[N], nc[N], 1);
 
-            d_zeros(&plam[N], 2*nb[N] + 2*nc[N], 1);
+            d_zeros(&plam_b[N], nb[N], 1);
+            d_zeros(&plam_c[N], nc[N], 1);
 
             real_t *hlb[N + 1];
             real_t *hub[N + 1];
@@ -423,7 +426,8 @@ int main() {
             qp_out.x = px;
             qp_out.u = pu;
             qp_out.pi = ppi;
-            // qp_out.lam = plam; TODO(bnovoselnik): fix this
+            qp_out.lam_b = plam_b;
+            qp_out.lam_c = plam_c;
 
             // Initialize solver
             #ifdef USE_QPOASES

@@ -82,11 +82,6 @@ int ocp_qp_hpmpc(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     double **hlam = (double **) c_ptr;
     c_ptr += (N+1)*sizeof(double *);
 
-    // align data
-    size_t l_ptr = (size_t) c_ptr;
-    l_ptr = (l_ptr+ALIGNMENT-1)/ALIGNMENT*ALIGNMENT;
-    c_ptr = (char *) l_ptr;
-
     // assign pointers to multipliers
     for (int_t k = 0; k < N+1; k++) {
         hlam[k] = (double *) c_ptr;
@@ -396,7 +391,7 @@ int ocp_qp_hpmpc(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
         double *inf_norm_res = hpmpc_args->inf_norm_res;
 
         // memory for stat
-        size_t addr = ( ( (size_t) workspace_) + 7) / 8 * 8;  // align to 8-byte boundaries
+        size_t addr = ( ( (size_t) c_ptr) + 7) / 8 * 8;  // align to 8-byte boundaries
         double *ptr_double = (double *) addr;
         double *stat = ptr_double;
         ptr_double += 5*k_max;
