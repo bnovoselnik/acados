@@ -249,15 +249,15 @@ int_t ocp_qp_out_calculate_size(const int_t N, const int_t *nx, const int_t *nu,
 
     int_t bytes = sizeof(ocp_qp_out);
 
-    bytes += 3*(N+1)*sizeof(real_t *);  // u, x, lam
+    bytes += 4*(N+1)*sizeof(real_t *);  // u, x, lam_b, lam_c
     bytes += N*sizeof(real_t *);  // pi
 
     for (int_t k = 0; k < N+1; k++) {
         bytes += (nx[k] + nu[k])*sizeof(real_t);  // u, x
         if (k < N)
             bytes += (nx[k+1])*sizeof(real_t);  // pi
-        bytes += 2*(nb[k] + nc[k])*sizeof(real_t);  // lam
-        }
+        bytes += (nb[k] + nc[k])*sizeof(real_t);  // lam_b, lam_c
+    }
 
     bytes = (bytes+ALIGNMENT-1)/ALIGNMENT*ALIGNMENT;
     bytes += ALIGNMENT;
@@ -286,7 +286,10 @@ char *assign_ocp_qp_out(const int_t N, const int_t *nx, const int_t *nu, const i
     (*qp_out)->pi = (real_t **) c_ptr;
     c_ptr += N*sizeof(real_t *);
 
-    (*qp_out)->lam = (real_t **) c_ptr;
+    (*qp_out)->lam_b = (real_t **) c_ptr;
+    c_ptr += (N+1)*sizeof(real_t *);
+
+    (*qp_out)->lam_c = (real_t **) c_ptr;
     c_ptr += (N+1)*sizeof(real_t *);
 
     // align data
@@ -315,8 +318,11 @@ char *assign_ocp_qp_out(const int_t N, const int_t *nx, const int_t *nu, const i
 
     for (int_t k = 0; k < N+1; k++) {
         assert((size_t)c_ptr % 8 == 0);
-        (*qp_out)->lam[k] = (real_t *) c_ptr;
-        c_ptr += 2*(nb[k] + nc[k])*sizeof(real_t);
+        (*qp_out)->lam_b[k] = (real_t *) c_ptr;
+        c_ptr += nb[k]*sizeof(real_t);
+
+        (*qp_out)->lam_c[k] = (real_t *) c_ptr;
+        c_ptr += nc[k]*sizeof(real_t);
     }
     return c_ptr;
 }

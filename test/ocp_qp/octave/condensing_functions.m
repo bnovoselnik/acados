@@ -121,7 +121,7 @@ function [w_star] = solve_structured_ocp_bounds(N, nx, nu, A, B, b, x0, Q, S, R,
 
     % Solve OCP
     [w_star, ~, exit_flag] = quadprog(H, h, [], [], G, -g, lbw, ubw);
-    
+
 endfunction
 
 function [w_star] = solve_structured_ocp_no_bounds(N, nx, nu, nc, A, B, b, x0, Q, S, R, q, r, Cx, Cu, cl, cu)

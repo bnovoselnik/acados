@@ -281,7 +281,6 @@ static void fill_in_qp_out(const ocp_qp_in *in, ocp_qp_out *out,
             out->pi[kk][ii] = mem->qpData.lambda.data[nn++];
         }
     }
-    // TODO(dimitris): fill-in multipliers for inequalities
 }
 
 static qpdunes_stage_qp_solver_t define_stage_qp_solver(const ocp_qp_in *in) {

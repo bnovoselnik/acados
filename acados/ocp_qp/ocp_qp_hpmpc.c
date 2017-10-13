@@ -72,7 +72,26 @@ int ocp_qp_hpmpc(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     double **hx = qp_out->x;
     double **hu = qp_out->u;
     double **hpi = qp_out->pi;
-    double **hlam = qp_out->lam;
+    double **hlam_b = qp_out->lam_b;
+    double **hlam_c = qp_out->lam_c;
+
+    // char pointer to workspace
+    char *c_ptr = (char *) workspace_;
+
+    // assign temporary container for multipliers
+    double **hlam = (double **) c_ptr;
+    c_ptr += (N+1)*sizeof(double *);
+
+    // align data
+    size_t l_ptr = (size_t) c_ptr;
+    l_ptr = (l_ptr+ALIGNMENT-1)/ALIGNMENT*ALIGNMENT;
+    c_ptr = (char *) l_ptr;
+
+    // assign pointers to multipliers
+    for (int_t k = 0; k < N+1; k++) {
+        hlam[k] = (double *) c_ptr;
+        c_ptr += 2*(nb[k] + ng[k])*sizeof(double);
+    }
 
     int hpmpc_status = -1;
 
@@ -412,6 +431,24 @@ int ocp_qp_hpmpc(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
         hpmpc_args->out_iter = out_iter;  // number of performed iterations
     }
 
+    for (int_t k = 0; k < N+1; k++) {
+        // extract hlam_lb and hlam_ub
+        for (int_t i = 0; i < nb[k]; i++) {
+            double hlam_lb = hlam[k][i];
+            double hlam_ub = hlam[k][i + nb[k] + ng[k]];
+
+            hlam_b[k][i] = hlam_lb - hlam_ub;
+        }
+
+        // extract hlam_lg and hlam_ug
+        for (int_t i = 0; i < ng[k]; i++) {
+            double hlam_lg = hlam[k][i + nb[k]];
+            double hlam_ug = hlam[k][i + 2*nb[k] + ng[k]];
+
+            hlam_c[k][i] = hlam_lg - hlam_ug;
+        }
+    }
+
     if (hpmpc_status == 1) acados_status = ACADOS_MAXITER;
     if (hpmpc_status == 2) acados_status = ACADOS_MINSTEP;
 
@@ -446,6 +483,15 @@ int_t ocp_qp_hpmpc_calculate_workspace_size(const ocp_qp_in *qp_in, void *args_)
         ws_size += hpmpc_d_ip_ocp_hard_tv_work_space_size_bytes(N, nx, \
             nu, nb, hidxb, ng, N2);
     }
+
+    // temporary container for ineq. multipliers
+    ws_size += (N+1)*sizeof(real_t *);
+    for (int_t k = 0; k < N+1; k++) {
+        ws_size += 2*(nb[k] + ng[k])*sizeof(real_t);
+    }
+    ws_size = (ws_size+ALIGNMENT-1)/ALIGNMENT*ALIGNMENT;
+    ws_size += ALIGNMENT;
+
     return ws_size;
 }
 

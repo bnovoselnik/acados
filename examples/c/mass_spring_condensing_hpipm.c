@@ -487,16 +487,19 @@ int main() {
     double *hx[N + 1];
     double *hu[N];
     double *hpi[N];
-    double *hlam[N + 1];
+    double *hlam_b[N + 1];
+    double *hlam_c[N + 1];
 
     for (ii = 0; ii < N; ii++) {
         d_zeros(&hx[ii], nxx[ii], 1);
         d_zeros(&hu[ii], nuu[ii], 1);
         d_zeros(&hpi[ii], nxx[ii + 1], 1);
-        d_zeros(&hlam[ii], 2 * nbb[ii] + 2 * ngg[ii], 1);
+        d_zeros(&hlam_b[ii], nbb[ii], 1);
+        d_zeros(&hlam_c[ii], ngg[ii], 1);
     }
     d_zeros(&hx[N], nxx[N], 1);
-    d_zeros(&hlam[N], 2 * nbb[N] + 2 * ngg[N], 1);
+    d_zeros(&hlam_b[N], nbb[N], 1);
+    d_zeros(&hlam_c[N], ngg[N], 1);
 
     /************************************************
      * create the in and out struct
@@ -528,7 +531,8 @@ int main() {
     qp_out.x = hx;
     qp_out.u = hu;
     qp_out.pi = hpi;
-    qp_out.lam = hlam;
+    qp_out.lam_b = hlam_b;
+    qp_out.lam_c = hlam_c;
 
     /************************************************
      * solver arguments (fully sparse)
@@ -599,8 +603,11 @@ int main() {
     printf("\npi = \n");
     for (ii = 0; ii < N; ii++) d_print_mat(1, nxx[ii+1], hpi[ii], 1);
 
-    printf("\nlam = \n");
-    for (ii = 0; ii <= N; ii++) d_print_mat(1, 2*nbb[ii]+2*ngg[ii], hlam[ii], 1);
+    printf("\nlam_b = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, nbb[ii], hlam_b[ii], 1);
+
+    printf("\nlam_c = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, ngg[ii], hlam_c[ii], 1);
 
     printf("\n");
     printf(" inf norm res: %e, %e, %e, %e, %e\n", hpipm_memory->inf_norm_res[0],
@@ -654,10 +661,12 @@ int main() {
         d_free(hx[ii]);
         d_free(hu[ii]);
         d_free(hpi[ii]);
-        d_free(hlam[ii]);
+        d_free(hlam_b[ii]);
+        d_free(hlam_c[ii]);
     }
     d_free(hx[N]);
-    d_free(hlam[N]);
+    d_free(hlam_b[N]);
+    d_free(hlam_c[N]);
 
     free(workspace);
     free(memory);
