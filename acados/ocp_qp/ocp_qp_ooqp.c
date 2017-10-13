@@ -543,23 +543,44 @@ static void print_outputs(ocp_qp_ooqp_memory *mem, ocp_qp_ooqp_workspace *work,
     for (ii = 0; ii < mem->nx; ii++) {
         printf("=====> x[%d] = %f\n", ii + 1, work->x[ii]);
     }
+
+    printf("\nDUAL SOLUTION:\n");
+    for (ii = 0; ii < mem->nnz; ii++) {
+        printf("=====> z[%d] = %f\n", ii + 1, work->z[ii]);
+    }
 }
 
 static void fill_in_qp_out(const ocp_qp_in *in, ocp_qp_out *out,
                            ocp_qp_ooqp_workspace *work) {
-    int_t kk, ii, nn;
+    int_t kk, ii, nn, mm;
 
     nn = 0;
     for (kk = 0; kk <= in->N; kk++) {
         for (ii = 0; ii < in->nx[kk]; ii++) out->x[kk][ii] = work->x[nn++];
         for (ii = 0; ii < in->nu[kk]; ii++) out->u[kk][ii] = work->x[nn++];
     }
+
+    // fill the equality multipliers
     nn = 0;
     for (kk = 0; kk < in->N; kk++) {
         for (ii = 0; ii < in->nx[kk + 1]; ii++)
             out->pi[kk][ii] = -work->y[nn++];
     }
-    // TODO(dimitris): fill-in multipliers of inequalities
+
+    nn = 0; mm = 0;
+    for (kk = 0; kk <= in->N; kk++) {
+        // fill the box-constraint multipliers
+        for (ii = 0; ii < in->nb[kk]; ii++) {
+            out->lam_b[kk][ii] = work->gamma[nn] - work->phi[nn];
+            nn++;
+        }
+
+        // fill in general constraint multipliers
+        for (ii = 0; ii < in->nc[kk]; ii++) {
+            out->lam_c[kk][ii] = work->z[mm];
+            mm++;
+        }
+    }
 }
 
 ocp_qp_ooqp_args *ocp_qp_ooqp_create_arguments() {
@@ -693,7 +714,7 @@ int_t ocp_qp_ooqp(const ocp_qp_in *in, ocp_qp_out *out, void *args_, void *memor
         work->x, work->gamma, work->phi, work->y, work->z, work->lambda, work->pi,
         &work->objectiveValue, args->printLevel, &return_value);
 
-    if (0) print_outputs(mem, work, return_value);
+    if (1) print_outputs(mem, work, return_value);
     fill_in_qp_out(in, out, work);
 
     return return_value;

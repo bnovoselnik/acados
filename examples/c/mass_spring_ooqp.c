@@ -573,6 +573,12 @@ int main() {
     printf("\nx = \n");
     for (ii = 0; ii <= N; ii++) d_print_mat(1, nxx[ii], solver->qp_out->x[ii], 1);
 
+    printf("\nlam_b = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, nbb[ii], solver->qp_out->lam_b[ii], 1);
+
+    printf("\nlam_c = \n");
+    for (ii = 0; ii <= N; ii++) d_print_mat(1, ngg[ii], solver->qp_out->lam_c[ii], 1);
+
     printf("\n");
     printf(" Average solution time over %d runs: %5.2e seconds\n", nrep, time);
     printf("\n\n");
