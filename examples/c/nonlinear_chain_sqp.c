@@ -423,7 +423,7 @@ int main() {
             qp_out.x = px;
             qp_out.u = pu;
             qp_out.pi = ppi;
-            qp_out.lam = plam;
+            // qp_out.lam = plam; TODO(bnovoselnik): fix this
 
             // Initialize solver
             #ifdef USE_QPOASES
