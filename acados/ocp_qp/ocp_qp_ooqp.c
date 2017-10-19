@@ -714,7 +714,7 @@ int_t ocp_qp_ooqp(const ocp_qp_in *in, ocp_qp_out *out, void *args_, void *memor
         work->x, work->gamma, work->phi, work->y, work->z, work->lambda, work->pi,
         &work->objectiveValue, args->printLevel, &return_value);
 
-    if (1) print_outputs(mem, work, return_value);
+    if (0) print_outputs(mem, work, return_value);
     fill_in_qp_out(in, out, work);
 
     return return_value;

@@ -32,6 +32,7 @@ typedef struct {
     const int_t *nu;
     const int_t *nb;
     const int_t *nc;
+    const int_t *ns;
     const real_t **A;
     const real_t **B;
     const real_t **b;
@@ -56,6 +57,37 @@ typedef struct {
     real_t **lam_b;
     real_t **lam_c;
 } ocp_qp_out;
+
+typedef struct {
+    real_t **res_r;
+    real_t **res_q;
+    // real_t **res_ls;
+    // real_t **res_us;
+    real_t **res_b;
+    real_t **res_d_lb;
+    real_t **res_d_ub;
+    real_t **res_d_lg;
+    real_t **res_d_ug;
+    // real_t **res_d_ls;
+    // real_t **res_d_us;
+    real_t **res_m_lb;
+    real_t **res_m_ub;
+    real_t **res_m_lg;
+    real_t **res_m_ug;
+    // real_t **res_m_ls;
+    // real_t **res_m_us;
+} ocp_qp_res;
+
+typedef struct {
+    struct d_ocp_qp *qp;
+    struct d_ocp_qp_sol *qp_sol;
+    struct d_ocp_qp_res *res_workspace;
+    double **hlam_lb;
+    double **hlam_ub;
+    double **hlam_lg;
+    double **hlam_ug;
+    int **hidxb_rev;
+} ocp_qp_res_memory;
 
 typedef struct {
     int_t (*fun)(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args, void *mem, void *work);
@@ -85,6 +117,24 @@ char *assign_ocp_qp_out(const int_t N, const int_t *nx, const int_t *nu, const i
 
 ocp_qp_out *create_ocp_qp_out(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
                               const int_t *nc);
+
+int_t ocp_qp_res_calculate_size(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
+                                const int_t *nc);
+
+char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
+                        const int_t *nc, ocp_qp_res **qp_res, void *ptr);
+
+ocp_qp_res *create_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
+                              const int_t *nc);
+
+int_t ocp_qp_res_memory_calculate_size(const ocp_qp_in *qp_in);
+
+char *assign_ocp_qp_res_memory(const ocp_qp_in *qp_in, ocp_qp_res_memory **qp_res_mem, void *ptr);
+
+ocp_qp_res_memory *create_ocp_qp_res_memory(const ocp_qp_in *qp_in);
+
+void ocp_qp_calculate_res(const ocp_qp_in *qp_in, const ocp_qp_out *qp_out, ocp_qp_res *qp_res,
+                          ocp_qp_res_memory *mem);
 
 void ocp_qp_in_copy_dynamics(const real_t *A, const real_t *B, const real_t *b, ocp_qp_in *qp_in,
                              int_t stage);

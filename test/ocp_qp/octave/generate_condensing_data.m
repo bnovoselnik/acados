@@ -40,9 +40,9 @@ for mode = {'LTI', 'LTV'}
     saveDoubleVector(x0,'x0',prefix);
 
     for ii = 1:N+1
-    
+
       if ii <= N
-        Rloc = R(:,(ii-1)*nu+1:ii*nu);  
+        Rloc = R(:,(ii-1)*nu+1:ii*nu);
         Sloc = S(:,(ii-1)*nx+1:ii*nx);
         rloc = r(:,ii);
         Aloc = A(:,(ii-1)*nx+1:ii*nx);
@@ -52,26 +52,26 @@ for mode = {'LTI', 'LTV'}
         ubloc = [xu(:,ii); uu(:,ii)];
         lbloc = [xl(:,ii); ul(:,ii)];
         idxb = (1:nx+nu)-1;
-        
+
         saveDoubleMatrix(Aloc,['A' num2str(ii-1)],prefix);
         saveDoubleMatrix(Bloc,['B' num2str(ii-1)],prefix);
         saveDoubleVector(bloc,['bv' num2str(ii-1)],prefix);
         saveDoubleMatrix(Rloc,['R' num2str(ii-1)],prefix);
         saveDoubleMatrix(Sloc,['S' num2str(ii-1)],prefix);
         saveDoubleVector(rloc,['rv' num2str(ii-1)],prefix);
-        saveDoubleMatrix(Culoc,['Cu' num2str(ii-1)],prefix);  
+        saveDoubleMatrix(Culoc,['Cu' num2str(ii-1)],prefix);
       else
         ubloc = xu(:,ii);
         lbloc = xl(:,ii);
         idxb = (1:nx)-1;
       end
-      
+
       Qloc = Q(:,(ii-1)*nx+1:ii*nx);
       qloc = q(:,ii);
       Cxloc = Cx(:,(ii-1)*nx+1:ii*nx);
       ucloc = cu(:,ii);
       lcloc = cl(:,ii);
-            
+
       saveDoubleMatrix(Qloc,['Q' num2str(ii-1)],prefix);
       saveDoubleVector(qloc,['qv' num2str(ii-1)],prefix);
       saveDoubleMatrix(Cxloc,['Cx' num2str(ii-1)],prefix);
@@ -82,7 +82,7 @@ for mode = {'LTI', 'LTV'}
       saveIntVector(idxb,['idxb' num2str(ii-1)],prefix);
 
     end
-    
+
     cd(prefix);
     save('N.dat', 'N', '-ascii', '-double');
     save('nx.dat', 'nx', '-ascii', '-double');
@@ -111,14 +111,14 @@ for mode = {'LTI', 'LTV'}
     save('general_constraint_ub.dat', 'cu', '-ascii', '-double');
     save('general_constraint_lb.dat', 'cl', '-ascii', '-double');
 
-    [w_star_ocp,pi_star_ocp] = solve_structured_ocp(N, nx, nu, nc, A, B, b, x0, Q, S, R, q, r, xl, xu, ul, uu,
+    [w_star_ocp,pi_star_ocp,lamb_star_ocp,lamc_star_ocp] = solve_structured_ocp(N, nx, nu, nc, A, B, b, x0, Q, S, R, q, r, xl, xu, ul, uu,
         Cx, Cu, cl, cu);
-     
-    % TODO(dimitris-robin): update solve_structured_ocp function to allow for empty bounds/constraints and eliminate functions below 
+
+    % TODO(dimitris-robin): update solve_structured_ocp function to allow for empty bounds/constraints and eliminate functions below
     w_star_ocp_unconstrained = solve_structured_ocp_unconstrained(N, nx, nu, A, B, b, x0, Q, S, R, q, r);
     w_star_ocp_bounds = solve_structured_ocp_bounds(N, nx, nu, A, B, b, x0, Q, S, R, q, r, xl, xu, ul, uu);
-    w_star_ocp_no_bounds = solve_structured_ocp_no_bounds(N, nx, nu, nc, A, B, b, x0, Q, S, R, q, r, Cx, Cu, cl, cu);   
-   
+    w_star_ocp_no_bounds = solve_structured_ocp_no_bounds(N, nx, nu, nc, A, B, b, x0, Q, S, R, q, r, Cx, Cu, cl, cu);
+
     % Do condensing
     [G, g, A_bar, B_bar] = calculate_transition_quantities(N, nx, nu, A, B, b, x0);
     [H_bar, h_bar] = calculate_condensed_cost_function(N, nx, nu, Q, S, R, q, r, A, B, b, x0);
@@ -150,7 +150,7 @@ for mode = {'LTI', 'LTV'}
     if(~(exit_flag == 1))
         error(['Unconstrained condensed QP solution failed with code: ', num2str(exit_flag)]);
     end
-     
+
     % Save data to file
     save('transition_vector.dat', 'g', '-ascii', '-double');
     save('transition_matrix.dat', 'G', '-ascii', '-double');
@@ -166,15 +166,17 @@ for mode = {'LTI', 'LTV'}
     save('condensed_general_constraint_ub.dat', 'c_bar_ub', '-ascii', '-double');
     save('w_star_ocp_constrained.dat', 'w_star_ocp', '-ascii', '-double');
     save('pi_star_ocp_constrained.dat', 'pi_star_ocp', '-ascii', '-double');
+    save('lamb_star_ocp_constrained.dat', 'lamb_star_ocp', '-ascii', '-double');
+    save('lamc_star_ocp_constrained.dat', 'lamc_star_ocp', '-ascii', '-double');
     save('w_star_ocp_bounds.dat', 'w_star_ocp_bounds', '-ascii', '-double');
     save('w_star_ocp_no_bounds.dat', 'w_star_ocp_no_bounds', '-ascii', '-double'); % only with affine constraints
     save('w_star_ocp_unconstrained.dat', 'w_star_ocp_unconstrained', '-ascii', '-double');
     cd('..');
-    
+
     saveDoubleVector(w_star_ocp,'sol_constrained',prefix);
     saveDoubleVector(w_star_ocp_bounds,'sol_only_bounds',prefix);
     saveDoubleVector(w_star_ocp_no_bounds,'sol_only_ineq',prefix);
     saveDoubleVector(w_star_ocp_unconstrained,'sol_only_x0',prefix);
 
-    
+
 end

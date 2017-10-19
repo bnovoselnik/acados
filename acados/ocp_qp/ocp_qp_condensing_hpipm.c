@@ -182,7 +182,7 @@ int_t ocp_qp_condensing_hpipm_calculate_memory_size(const ocp_qp_in *qp_in, void
     size += 1 * (N + 1) * sizeof(int_t *);  // hidxb_rev
     for (int_t ii = 0; ii <= N; ii++) {
         size += nb[ii]*sizeof(int_t);  // hidxb_rev
-        size += 2*(nb[ii] + ng[ii])*sizeof(double); // lam_lb lam_ub lam_lg lam_ug
+        size += 2*(nb[ii] + ng[ii])*sizeof(double);  // lam_lb lam_ub lam_lg lam_ug
     }
 
     size = (size + 63) / 64 * 64;  // make multipl of typical cache line size

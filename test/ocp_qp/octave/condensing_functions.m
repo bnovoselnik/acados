@@ -49,7 +49,7 @@ function [A_ineq, b_ineq] = ocp_general_constraints(N, nx, nu, nc, Cx, Cu, cl, c
     b_ineq = [cu(:); -cl(:)];
 endfunction
 
-function [w_star,pi_star] = solve_structured_ocp(N, nx, nu, nc, A, B, b, x0, Q, S, R, q, r, xl, xu, ul, uu,
+function [w_star,pi_star,lamb_star,lamc_star] = solve_structured_ocp(N, nx, nu, nc, A, B, b, x0, Q, S, R, q, r, xl, xu, ul, uu,
     Cx, Cu, cl, cu)
 
     global TOLERANCE;
@@ -73,7 +73,11 @@ function [w_star,pi_star] = solve_structured_ocp(N, nx, nu, nc, A, B, b, x0, Q, 
     mu_star = -all_multipliers.lower + all_multipliers.upper;
     nu_star = all_multipliers.ineqlin;
 
+    disp(mu_star)
+
     pi_star = lambda_star(nx+1:end);
+    lamb_star = -all_multipliers.lower + all_multipliers.upper;
+    lamc_star = all_multipliers.ineqlin;
 
     nc_all = (N+1)*nc;
     KKT_system = [];

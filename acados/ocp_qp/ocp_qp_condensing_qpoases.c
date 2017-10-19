@@ -192,7 +192,7 @@ int ocp_qp_condensing_qpoases_calculate_memory_size(const ocp_qp_in *qp_in, void
     size += 1 * (N + 1) * sizeof(int *);  // hidxb_rev
     for (int ii = 0; ii <= N; ii++) {
         size += nb[ii]*sizeof(int);  // hidxb_rev
-        size += 2*(nb[ii] + ng[ii])*sizeof(double); // lam_lb lam_ub lam_lg lam_ug
+        size += 2*(nb[ii] + ng[ii])*sizeof(double);  // lam_lb lam_ub lam_lg lam_ug
     }
     //  size += 1*d_size_strmat(nvd, nvd); // sR
 
