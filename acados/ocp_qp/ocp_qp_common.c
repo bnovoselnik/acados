@@ -41,6 +41,8 @@
 #include "hpipm/include/hpipm_d_dense_qp_sol.h"
 #include "hpipm/include/hpipm_d_ocp_qp.h"
 #include "hpipm/include/hpipm_d_ocp_qp_sol.h"
+#include "hpipm/include/hpipm_d_ocp_qp_ipm.h"
+#include "hpipm/include/hpipm_d_ocp_qp_kkt.h"
 
 int_t ocp_qp_in_calculate_size(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
                                const int_t *nc) {
@@ -352,25 +354,35 @@ ocp_qp_out *create_ocp_qp_out(const int_t N, const int_t *nx, const int_t *nu, c
     return qp_out;
 }
 
-int_t ocp_qp_res_calculate_size(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
-                                const int_t *nc) {
+int_t ocp_qp_res_calculate_size(const ocp_qp_in *qp_in) {
+    int N = qp_in->N;
+    int *nx = (int *)qp_in->nx;
+    int *nu = (int *)qp_in->nu;
+    int *nb = (int *)qp_in->nb;
+    int *ng = (int *)qp_in->nc;
+    int *ns = (int *)qp_in->ns;
+
     int_t bytes = sizeof(ocp_qp_res);
 
-    bytes += 10 * (N + 1) * sizeof(real_t *);  // res_r, res_q,
+    bytes += 16 * (N + 1) * sizeof(real_t *);  // res_r, res_q,
                                                // res_d_lb, res_d_ub,
                                                // res_d_lg, res_d_ug,
                                                // res_m_lb, res_m_ub,
                                                // res_m_lg, res_m_ug
+                                               // res_ls, res_us
+                                               // res_d_ls, res_d_us
+                                               // res_m_ls, res_m_us
     bytes += 1 * N * sizeof(real_t *);  // res_b
 
     for (int_t k = 0; k < N + 1; k++) {
         bytes += (nx[k] + nu[k]) * sizeof(real_t);         // res_r, res_q
         if (k < N)
             bytes += (nx[k + 1]) * sizeof(real_t);  // res_b
-        bytes += 4 * (nb[k] + nc[k]) * sizeof(real_t);  // res_d_lb, res_d_ub,
+        bytes += 4 * (nb[k] + ng[k]) * sizeof(real_t);  // res_d_lb, res_d_ub,
                                                         // res_d_lg, res_d_ug,
                                                         // res_m_lb, res_m_ub,
                                                         // res_m_lg, res_m_ug
+        bytes += 6 * ns[k] * sizeof(real_t);
     }
 
     bytes = (bytes + ALIGNMENT - 1) / ALIGNMENT * ALIGNMENT;
@@ -379,8 +391,14 @@ int_t ocp_qp_res_calculate_size(const int_t N, const int_t *nx, const int_t *nu,
     return bytes;
 }
 
-char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
-                        const int_t *nc, ocp_qp_res **qp_res, void *ptr) {
+char *assign_ocp_qp_res(const ocp_qp_in *qp_in, ocp_qp_res **qp_res, void *ptr) {
+    int N = qp_in->N;
+    int *nx = (int *)qp_in->nx;
+    int *nu = (int *)qp_in->nu;
+    int *nb = (int *)qp_in->nb;
+    int *ng = (int *)qp_in->nc;
+    int *ns = (int *)qp_in->ns;
+
     // char pointer
     char *c_ptr = (char *)ptr;
 
@@ -392,6 +410,12 @@ char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const i
     c_ptr += (N + 1) * sizeof(real_t *);
 
     (*qp_res)->res_q = (real_t **)c_ptr;
+    c_ptr += (N + 1) * sizeof(real_t *);
+
+    (*qp_res)->res_ls = (real_t **)c_ptr;
+    c_ptr += (N + 1) * sizeof(real_t *);
+
+    (*qp_res)->res_us = (real_t **)c_ptr;
     c_ptr += (N + 1) * sizeof(real_t *);
 
     (*qp_res)->res_b = (real_t **)c_ptr;
@@ -409,6 +433,12 @@ char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const i
     (*qp_res)->res_d_ug = (real_t **)c_ptr;
     c_ptr += (N + 1) * sizeof(real_t *);
 
+    (*qp_res)->res_d_ls = (real_t **)c_ptr;
+    c_ptr += (N + 1) * sizeof(real_t *);
+
+    (*qp_res)->res_d_us = (real_t **)c_ptr;
+    c_ptr += (N + 1) * sizeof(real_t *);
+
     (*qp_res)->res_m_lb = (real_t **)c_ptr;
     c_ptr += (N + 1) * sizeof(real_t *);
 
@@ -419,6 +449,12 @@ char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const i
     c_ptr += (N + 1) * sizeof(real_t *);
 
     (*qp_res)->res_m_ug = (real_t **)c_ptr;
+    c_ptr += (N + 1) * sizeof(real_t *);
+
+    (*qp_res)->res_m_ls = (real_t **)c_ptr;
+    c_ptr += (N + 1) * sizeof(real_t *);
+
+    (*qp_res)->res_m_us = (real_t **)c_ptr;
     c_ptr += (N + 1) * sizeof(real_t *);
 
     // align data
@@ -436,6 +472,12 @@ char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const i
         (*qp_res)->res_q[k] = (real_t *)c_ptr;
         c_ptr += nx[k] * sizeof(real_t);
 
+        (*qp_res)->res_ls[k] = (real_t *)c_ptr;
+        c_ptr += ns[k] * sizeof(real_t);
+
+        (*qp_res)->res_us[k] = (real_t *)c_ptr;
+        c_ptr += ns[k] * sizeof(real_t);
+
         (*qp_res)->res_d_lb[k] = (real_t *)c_ptr;
         c_ptr += nb[k] * sizeof(real_t);
 
@@ -443,10 +485,16 @@ char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const i
         c_ptr += nb[k] * sizeof(real_t);
 
         (*qp_res)->res_d_lg[k] = (real_t *)c_ptr;
-        c_ptr += nc[k] * sizeof(real_t);
+        c_ptr += ng[k] * sizeof(real_t);
 
         (*qp_res)->res_d_ug[k] = (real_t *)c_ptr;
-        c_ptr += nc[k] * sizeof(real_t);
+        c_ptr += ng[k] * sizeof(real_t);
+
+        (*qp_res)->res_d_ls[k] = (real_t *)c_ptr;
+        c_ptr += ns[k] * sizeof(real_t);
+
+        (*qp_res)->res_d_us[k] = (real_t *)c_ptr;
+        c_ptr += ns[k] * sizeof(real_t);
 
         (*qp_res)->res_m_lb[k] = (real_t *)c_ptr;
         c_ptr += nb[k] * sizeof(real_t);
@@ -455,10 +503,16 @@ char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const i
         c_ptr += nb[k] * sizeof(real_t);
 
         (*qp_res)->res_m_lg[k] = (real_t *)c_ptr;
-        c_ptr += nc[k] * sizeof(real_t);
+        c_ptr += ng[k] * sizeof(real_t);
 
         (*qp_res)->res_m_ug[k] = (real_t *)c_ptr;
-        c_ptr += nc[k] * sizeof(real_t);
+        c_ptr += ng[k] * sizeof(real_t);
+
+        (*qp_res)->res_m_ls[k] = (real_t *)c_ptr;
+        c_ptr += ns[k] * sizeof(real_t);
+
+        (*qp_res)->res_m_us[k] = (real_t *)c_ptr;
+        c_ptr += ns[k] * sizeof(real_t);
     }
 
     for (int_t k = 0; k < N; k++) {
@@ -471,13 +525,12 @@ char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const i
     return c_ptr;
 }
 
-ocp_qp_res *create_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
-                              const int_t *nc) {
+ocp_qp_res *create_ocp_qp_res(const ocp_qp_in *qp_in) {
     ocp_qp_res *qp_res;
 
-    int_t bytes = ocp_qp_res_calculate_size(N, nx, nu, nb, nc);
+    int_t bytes = ocp_qp_res_calculate_size(qp_in);
     void *ptr = malloc(bytes);
-    char *ptr_end = assign_ocp_qp_res(N, nx, nu, nb, nc, &qp_res, ptr);
+    char *ptr_end = assign_ocp_qp_res(qp_in, &qp_res, ptr);
     assert((char *)ptr + bytes >= ptr_end);
     (void)ptr_end;
 
@@ -632,7 +685,6 @@ void ocp_qp_calculate_res(const ocp_qp_in *qp_in, const ocp_qp_out *qp_out, ocp_
     int *nu = (int *) qp_in->nu;
     int *nb = (int *) qp_in->nb;
     int *ng = (int *) qp_in->nc;
-    int *ns = (int *) qp_in->ns;
 
     // extract memory
     double **hlam_lb = mem->hlam_lb;
@@ -671,15 +723,21 @@ void ocp_qp_calculate_res(const ocp_qp_in *qp_in, const ocp_qp_out *qp_out, ocp_
     // extract output struct members
     double **hres_r = qp_res->res_r;
     double **hres_q = qp_res->res_q;
+    double **hres_ls = qp_res->res_ls;
+    double **hres_us = qp_res->res_us;
     double **hres_b = qp_res->res_b;
     double **hres_d_lb = qp_res->res_d_lb;
     double **hres_d_ub = qp_res->res_d_ub;
     double **hres_d_lg = qp_res->res_d_lg;
     double **hres_d_ug = qp_res->res_d_ug;
+    double **hres_d_ls = qp_res->res_d_ls;
+    double **hres_d_us = qp_res->res_d_us;
     double **hres_m_lb = qp_res->res_m_lb;
     double **hres_m_ub = qp_res->res_m_ub;
     double **hres_m_lg = qp_res->res_m_lg;
     double **hres_m_ug = qp_res->res_m_ug;
+    double **hres_m_ls = qp_res->res_m_ls;
+    double **hres_m_us = qp_res->res_m_us;
 
     // expand multipliers
     for (kk = 0; kk <= N; kk++) {
@@ -688,7 +746,7 @@ void ocp_qp_calculate_res(const ocp_qp_in *qp_in, const ocp_qp_out *qp_out, ocp_
             if (hlam_b[kk][ii] >= 0.0)
                 hlam_lb[kk][ii] = hlam_b[kk][ii];
             else
-                hlam_ub[kk][ii] = hlam_b[kk][ii];
+                hlam_ub[kk][ii] = -hlam_b[kk][ii];
         }
 
         // expand multipliers for lg and ug
@@ -696,7 +754,7 @@ void ocp_qp_calculate_res(const ocp_qp_in *qp_in, const ocp_qp_out *qp_out, ocp_
             if (hlam_c[kk][ii] >= 0.0)
                 hlam_lg[kk][ii] = hlam_c[kk][ii];
             else
-                hlam_ug[kk][ii] = hlam_c[kk][ii];
+                hlam_ug[kk][ii] = -hlam_c[kk][ii];
         }
     }
 
@@ -723,9 +781,9 @@ void ocp_qp_calculate_res(const ocp_qp_in *qp_in, const ocp_qp_out *qp_out, ocp_
     d_compute_res_ocp_qp(qp, qp_sol, res_workspace);
 
     // convert residuals to column major
-    d_cvt_ocp_qp_res_to_colmaj(qp, res_workspace, hres_r, hres_q, NULL, NULL, hres_b, hres_d_lb,
-                               hres_d_ub, hres_d_lg, hres_d_ug, NULL, NULL, hres_m_lb, hres_m_ub,
-                               hres_m_lg, hres_m_ug, NULL, NULL);
+    d_cvt_ocp_qp_res_to_colmaj(qp, res_workspace, hres_r, hres_q, hres_ls, hres_us, hres_b, hres_d_lb,
+                               hres_d_ub, hres_d_lg, hres_d_ug, hres_d_ls, hres_d_us, hres_m_lb, hres_m_ub,
+                               hres_m_lg, hres_m_ug, hres_m_ls, hres_m_us);
 
     return;
 }

@@ -61,21 +61,21 @@ typedef struct {
 typedef struct {
     real_t **res_r;
     real_t **res_q;
-    // real_t **res_ls;
-    // real_t **res_us;
+    real_t **res_ls;
+    real_t **res_us;
     real_t **res_b;
     real_t **res_d_lb;
     real_t **res_d_ub;
     real_t **res_d_lg;
     real_t **res_d_ug;
-    // real_t **res_d_ls;
-    // real_t **res_d_us;
+    real_t **res_d_ls;
+    real_t **res_d_us;
     real_t **res_m_lb;
     real_t **res_m_ub;
     real_t **res_m_lg;
     real_t **res_m_ug;
-    // real_t **res_m_ls;
-    // real_t **res_m_us;
+    real_t **res_m_ls;
+    real_t **res_m_us;
 } ocp_qp_res;
 
 typedef struct {
@@ -118,14 +118,11 @@ char *assign_ocp_qp_out(const int_t N, const int_t *nx, const int_t *nu, const i
 ocp_qp_out *create_ocp_qp_out(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
                               const int_t *nc);
 
-int_t ocp_qp_res_calculate_size(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
-                                const int_t *nc);
+int_t ocp_qp_res_calculate_size(const ocp_qp_in *qp_in);
 
-char *assign_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
-                        const int_t *nc, ocp_qp_res **qp_res, void *ptr);
+char *assign_ocp_qp_res(const ocp_qp_in *qp_in, ocp_qp_res **qp_res, void *ptr);
 
-ocp_qp_res *create_ocp_qp_res(const int_t N, const int_t *nx, const int_t *nu, const int_t *nb,
-                              const int_t *nc);
+ocp_qp_res *create_ocp_qp_res(const ocp_qp_in *qp_in);
 
 int_t ocp_qp_res_memory_calculate_size(const ocp_qp_in *qp_in);
 

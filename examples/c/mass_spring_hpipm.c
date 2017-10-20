@@ -195,6 +195,9 @@ int main() {
     for (ii = 0; ii < N; ii++) nuu[ii] = nu;
     nuu[N] = 0;
 
+    int nss[N+1];
+    for (ii= 0; ii < N+1; ii++) nss[ii] = 0;
+
     int nbb[N + 1];
 #if defined(ELIMINATE_X0)
     nbb[0] = nbu;
@@ -506,6 +509,7 @@ int main() {
     qp_in.nu = (const int *)nuu;
     qp_in.nb = (const int *)nbb;
     qp_in.nc = (const int *)ngg;
+    qp_in.ns = (const int *)nss;
     qp_in.A = (const double **)hA;
     qp_in.B = (const double **)hB;
     qp_in.b = (const double **)hb;
@@ -601,6 +605,47 @@ int main() {
 
     printf("\nlam_c = \n");
     for (ii = 0; ii <= N; ii++) d_print_mat(1, ngg[ii], hlam_c[ii], 1);
+
+    ocp_qp_res *qp_res = create_ocp_qp_res(&qp_in);
+    ocp_qp_res_memory *res_mem = create_ocp_qp_res_memory(&qp_in);
+    ocp_qp_calculate_res(&qp_in, &qp_out, qp_res, res_mem);
+
+    printf("\nres_q = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, nxx[ii], qp_res->res_q[ii], 1);
+
+    printf("\nres_r = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, nuu[ii], qp_res->res_r[ii], 1);
+
+    printf("\nres_b = \n");
+    for (ii = 0; ii < N; ii++) d_print_mat(1, nxx[ii+1], qp_res->res_b[ii], 1);
+
+    printf("\nres_d_lb = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, nbb[ii], qp_res->res_d_lb[ii], 1);
+
+    printf("\nres_d_ub = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, nbb[ii], qp_res->res_d_ub[ii], 1);
+
+    printf("\nres_d_lg = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, ngg[ii], qp_res->res_d_lg[ii], 1);
+
+    printf("\nres_d_ug = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, ngg[ii], qp_res->res_d_ug[ii], 1);
+
+    printf("\nres_m_lb = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, nbb[ii], qp_res->res_m_lb[ii], 1);
+
+    printf("\nres_m_ub = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, nbb[ii], qp_res->res_m_ub[ii], 1);
+
+    printf("\nres_m_lg = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, ngg[ii], qp_res->res_m_lg[ii], 1);
+
+    printf("\nres_m_ug = \n");
+    for (ii = 0; ii < N+1; ii++) d_print_mat(1, ngg[ii], qp_res->res_m_ug[ii], 1);
+
+
+
+
 
     printf("\n");
     printf(" inf norm res: %e, %e, %e, %e, %e\n", hpipm_memory->inf_norm_res[0],

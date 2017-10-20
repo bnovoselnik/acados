@@ -23,6 +23,8 @@
 
 #include "blasfeo/include/blasfeo_target.h"
 #include "blasfeo/include/blasfeo_v_aux_ext_dep.h"
+#include "blasfeo/include/blasfeo_d_aux_ext_dep.h"
+#include "blasfeo/include/blasfeo_i_aux_ext_dep.h"
 #include "catch/include/catch.hpp"
 
 #ifdef OOQP
@@ -46,15 +48,15 @@ using Eigen::Map;
 
 // TODO(dimitris): enable tests of condensing solvers after updating hpipm submodule
 
-int_t TEST_OOQP = 1;
+int_t TEST_OOQP = 0;
 real_t TOL_OOQP = 1e-6;
 int_t TEST_QPOASES = 1;
 real_t TOL_QPOASES = 1e-10;
-int_t TEST_QPDUNES = 1;
+int_t TEST_QPDUNES = 0;
 real_t TOL_QPDUNES = 1e-10;
-int_t TEST_HPMPC = 1;
+int_t TEST_HPMPC = 0;
 real_t TOL_HPMPC = 1e-5;
-int_t TEST_CON_HPIPM = 1;
+int_t TEST_CON_HPIPM = 0;
 real_t TOL_CON_HPIPM = 1e-5;
 int_t TEST_HPIPM = 1;
 real_t TOL_HPIPM = 1e-5;
@@ -87,6 +89,7 @@ TEST_CASE("Solve random OCP_QP", "[QP solvers]") {
                         SET_INEQUALITIES, SET_x0, QUIET);
                     qp_out = create_ocp_qp_out(qp_in->N, (int*)qp_in->nx, (int*)qp_in->nu,
                     (int*)qp_in->nb, (int*)qp_in->nc);
+
 
                     // TODO(dimitris): extend to variable dimensions
                     int_t N = qp_in->N;
@@ -135,19 +138,62 @@ TEST_CASE("Solve random OCP_QP", "[QP solvers]") {
                             acados_LAM_B = Eigen::Map<VectorXd>(solver->qp_out->lam_b[0], (N+1)*nb);
                             acados_LAM_C = Eigen::Map<VectorXd>(solver->qp_out->lam_c[0], (N+1)*nc);
 
+                            ocp_qp_res *qp_res = create_ocp_qp_res(solver->qp_in);
+                            ocp_qp_res_memory *res_mem = create_ocp_qp_res_memory(solver->qp_in);
+                            ocp_qp_calculate_res(solver->qp_in, solver->qp_out, qp_res, res_mem);
+
+                            VectorXd acados_RES_R = Eigen::Map<VectorXd>(qp_res->res_r[0], nu);
+                            VectorXd acados_RES_Q = Eigen::Map<VectorXd>(qp_res->res_q[0], nx);
+                            VectorXd acados_RES_B = Eigen::Map<VectorXd>(qp_res->res_b[0], nx);
+                            VectorXd acados_RES_D_LB = Eigen::Map<VectorXd>(qp_res->res_d_lb[0], nb);
+                            VectorXd acados_RES_D_UB = Eigen::Map<VectorXd>(qp_res->res_d_ub[0], nb);
+                            VectorXd acados_RES_D_LG = Eigen::Map<VectorXd>(qp_res->res_d_lg[0], nc);
+                            VectorXd acados_RES_D_UG = Eigen::Map<VectorXd>(qp_res->res_d_ug[0], nc);
+                            VectorXd acados_RES_M_LB = Eigen::Map<VectorXd>(qp_res->res_m_lb[0], nb);
+                            VectorXd acados_RES_M_UB = Eigen::Map<VectorXd>(qp_res->res_m_ub[0], nb);
+                            VectorXd acados_RES_M_LG = Eigen::Map<VectorXd>(qp_res->res_m_lg[0], nc);
+                            VectorXd acados_RES_M_UG = Eigen::Map<VectorXd>(qp_res->res_m_ug[0], nc);
+
+                            for (int ii = 1; ii < N+1; ii++) {
+                                acados_RES_R << Eigen::Map<VectorXd>(qp_res->res_r[ii], nu);
+                                acados_RES_Q << Eigen::Map<VectorXd>(qp_res->res_q[ii], nx);
+                                acados_RES_D_LB << Eigen::Map<VectorXd>(qp_res->res_d_lb[ii], nb);
+                                acados_RES_D_UB << Eigen::Map<VectorXd>(qp_res->res_d_ub[ii], nb);
+                                acados_RES_D_LG << Eigen::Map<VectorXd>(qp_res->res_d_lg[ii], nc);
+                                acados_RES_D_UG << Eigen::Map<VectorXd>(qp_res->res_d_ug[ii], nc);
+                                acados_RES_M_LB << Eigen::Map<VectorXd>(qp_res->res_m_lb[ii], nb);
+                                acados_RES_M_UB << Eigen::Map<VectorXd>(qp_res->res_m_ub[ii], nb);
+                                acados_RES_M_LG << Eigen::Map<VectorXd>(qp_res->res_m_lg[ii], nc);
+                                acados_RES_M_UG << Eigen::Map<VectorXd>(qp_res->res_m_ug[ii], nc);
+                                if (ii < N)
+                                    acados_RES_B << Eigen::Map<VectorXd>(qp_res->res_b[ii], nx);
+                            }
+
                             REQUIRE(return_value == 0);
                             REQUIRE(acados_W.isApprox(true_W, TOL_QPOASES));
                             // TODO(dimitris): check multipliers in other solvers too
                             if (constraint == "CONSTRAINED") {
                                 REQUIRE(acados_PI.isApprox(true_PI, TOL_QPOASES));
 
-                                for (int j = 0; j < (N+1)*nb; j++) {
-                                    printf(" ===> lam_b[%d] = %5.2e \n", j, acados_LAM_B(j));
-                                }
+                                // for (int j = 0; j < (N+1)*nb; j++) {
+                                //     printf(" ===> lam_b[%d] = %5.2e \n", j, acados_LAM_B(j));
+                                // }
 
-                                for (int j = 0; j < (N+1)*nc; j++) {
-                                    printf(" ===> lam_c[%d] = %5.2e \n", j, acados_LAM_C(j));
-                                }
+                                // for (int j = 0; j < (N+1)*nc; j++) {
+                                //     printf(" ===> lam_c[%d] = %5.2e \n", j, acados_LAM_C(j));
+                                // }
+
+                                printf(" ===> norm(lam_r) = %5.2e \n", acados_RES_R.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_q) = %5.2e \n", acados_RES_Q.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_b) = %5.2e \n", acados_RES_B.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_lb) = %5.2e \n", acados_RES_D_LB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_ub) = %5.2e \n", acados_RES_D_UB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_lg) = %5.2e \n", acados_RES_D_LG.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_ug) = %5.2e \n", acados_RES_D_UG.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_lb) = %5.2e \n", acados_RES_M_LB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_ub) = %5.2e \n", acados_RES_M_UB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_lg) = %5.2e \n", acados_RES_M_LG.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_ug) = %5.2e \n", acados_RES_M_UG.lpNorm<Eigen::Infinity>());
                             }
                             std::cout <<"---> PASSED " << std::endl;
                         }
@@ -295,18 +341,60 @@ TEST_CASE("Solve random OCP_QP", "[QP solvers]") {
                             acados_LAM_B = Eigen::Map<VectorXd>(solver->qp_out->lam_b[0], (N+1)*nb);
                             acados_LAM_C = Eigen::Map<VectorXd>(solver->qp_out->lam_c[0], (N+1)*nc);
 
+                            ocp_qp_res *qp_res = create_ocp_qp_res(solver->qp_in);
+                            ocp_qp_res_memory *res_mem = create_ocp_qp_res_memory(solver->qp_in);
+                            ocp_qp_calculate_res(solver->qp_in, solver->qp_out, qp_res, res_mem);
+
+                            VectorXd acados_RES_R = Eigen::Map<VectorXd>(qp_res->res_r[0], nu);
+                            VectorXd acados_RES_Q = Eigen::Map<VectorXd>(qp_res->res_q[0], nx);
+                            VectorXd acados_RES_B = Eigen::Map<VectorXd>(qp_res->res_b[0], nx);
+                            VectorXd acados_RES_D_LB = Eigen::Map<VectorXd>(qp_res->res_d_lb[0], nb);
+                            VectorXd acados_RES_D_UB = Eigen::Map<VectorXd>(qp_res->res_d_ub[0], nb);
+                            VectorXd acados_RES_D_LG = Eigen::Map<VectorXd>(qp_res->res_d_lg[0], nc);
+                            VectorXd acados_RES_D_UG = Eigen::Map<VectorXd>(qp_res->res_d_ug[0], nc);
+                            VectorXd acados_RES_M_LB = Eigen::Map<VectorXd>(qp_res->res_m_lb[0], nb);
+                            VectorXd acados_RES_M_UB = Eigen::Map<VectorXd>(qp_res->res_m_ub[0], nb);
+                            VectorXd acados_RES_M_LG = Eigen::Map<VectorXd>(qp_res->res_m_lg[0], nc);
+                            VectorXd acados_RES_M_UG = Eigen::Map<VectorXd>(qp_res->res_m_ug[0], nc);
+
+                            for (int ii = 1; ii < N+1; ii++) {
+                                acados_RES_R << Eigen::Map<VectorXd>(qp_res->res_r[ii], nu);
+                                acados_RES_Q << Eigen::Map<VectorXd>(qp_res->res_q[ii], nx);
+                                acados_RES_D_LB << Eigen::Map<VectorXd>(qp_res->res_d_lb[ii], nb);
+                                acados_RES_D_UB << Eigen::Map<VectorXd>(qp_res->res_d_ub[ii], nb);
+                                acados_RES_D_LG << Eigen::Map<VectorXd>(qp_res->res_d_lg[ii], nc);
+                                acados_RES_D_UG << Eigen::Map<VectorXd>(qp_res->res_d_ug[ii], nc);
+                                acados_RES_M_LB << Eigen::Map<VectorXd>(qp_res->res_m_lb[ii], nb);
+                                acados_RES_M_UB << Eigen::Map<VectorXd>(qp_res->res_m_ub[ii], nb);
+                                acados_RES_M_LG << Eigen::Map<VectorXd>(qp_res->res_m_lg[ii], nc);
+                                acados_RES_M_UG << Eigen::Map<VectorXd>(qp_res->res_m_ug[ii], nc);
+                                if (ii < N)
+                                    acados_RES_B << Eigen::Map<VectorXd>(qp_res->res_b[ii], nx);
+                            }
+
                             REQUIRE(return_value == 0);
                             REQUIRE(acados_W.isApprox(true_W, TOL_HPIPM));
                             if (constraint == "CONSTRAINED") {
                                 REQUIRE(acados_PI.isApprox(true_PI, TOL_HPIPM));
 
-                                for (int j = 0; j < (N+1)*nb; j++) {
-                                    printf(" ===> lam_b[%d] = %5.2e \n", j, acados_LAM_B(j));
-                                }
+                                // for (int j = 0; j < (N+1)*nu; j++) {
+                                //     printf(" ===> res_r[%d] = %5.2e \n", j, acados_RES_R(j));
+                                // }
 
-                                for (int j = 0; j < (N+1)*nc; j++) {
-                                    printf(" ===> lam_c[%d] = %5.2e \n", j, acados_LAM_C(j));
-                                }
+                                // for (int j = 0; j < (N+1)*nc; j++) {
+                                //     printf(" ===> lam_c[%d] = %5.2e \n", j, acados_LAM_C(j));
+                                // }
+                                printf(" ===> norm(lam_r) = %5.2e \n", acados_RES_R.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_q) = %5.2e \n", acados_RES_Q.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_b) = %5.2e \n", acados_RES_B.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_lb) = %5.2e \n", acados_RES_D_LB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_ub) = %5.2e \n", acados_RES_D_UB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_lg) = %5.2e \n", acados_RES_D_LG.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_d_ug) = %5.2e \n", acados_RES_D_UG.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_lb) = %5.2e \n", acados_RES_M_LB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_ub) = %5.2e \n", acados_RES_M_UB.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_lg) = %5.2e \n", acados_RES_M_LG.lpNorm<Eigen::Infinity>());
+                                printf(" ===> norm(lam_m_ug) = %5.2e \n", acados_RES_M_UG.lpNorm<Eigen::Infinity>());
                             }
                             std::cout <<"---> PASSED " << std::endl;
                         }
