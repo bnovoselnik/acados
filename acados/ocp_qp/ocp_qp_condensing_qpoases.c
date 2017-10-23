@@ -430,7 +430,7 @@ int ocp_qp_condensing_qpoases(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *
     int acados_status = ACADOS_SUCCESS;
 
     // loop index
-    int ii, jj, kk;
+    int ii, jj;
 
     // extract memory
     double **hlam_lb = memory->hlam_lb;
@@ -491,10 +491,9 @@ int ocp_qp_condensing_qpoases(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *
     double **hx = qp_out->x;
     double **hu = qp_out->u;
     double **hpi = qp_out->pi;
-    double **hlam_b = qp_out->lam_b;
-    double **hlam_c = qp_out->lam_c;
+    double **hlam = qp_out->lam;
 
-    // compute bounds indices in order [u; x]
+    // compute bounds indeces in order [u; x]
     for (ii = 0; ii <= N; ii++) {
         for (jj = 0; jj < nb[ii]; jj++) {
             if (hidxb[ii][jj] < nx[ii]) {  // state constraint
@@ -506,12 +505,12 @@ int ocp_qp_condensing_qpoases(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *
     }
 
     //
-    // for (ii = 0; ii <= N; ii++) {
-    //     hlam_lb[ii] = hlam[ii];
-    //     hlam_ub[ii] = hlam[ii] + nb[ii];
-    //     hlam_lg[ii] = hlam[ii] + 2 * nb[ii];
-    //     hlam_ug[ii] = hlam[ii] + 2 * nb[ii] + ng[ii];
-    // }
+    for (ii = 0; ii <= N; ii++) {
+        hlam_lb[ii] = hlam[ii];
+        hlam_ub[ii] = hlam[ii] + nb[ii];
+        hlam_lg[ii] = hlam[ii] + 2 * nb[ii];
+        hlam_ug[ii] = hlam[ii] + 2 * nb[ii] + ng[ii];
+    }
 
     // extract dense qp size
     int nvd = qpd->nv;
@@ -624,17 +623,6 @@ int ocp_qp_condensing_qpoases(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *
     // extract solution
     d_cvt_ocp_qp_sol_to_colmaj(qp, qp_sol, hu, hx, NULL, NULL, hpi,
                                hlam_lb, hlam_ub, hlam_lg, hlam_ug, NULL, NULL);
-
-    // combine multipliers
-    for (kk = 0; kk <= N; kk++) {
-        // combine multipliers for lb and ub
-        for (ii = 0; ii <= nb[kk]; ii++)
-            hlam_b[kk][ii] = hlam_lb[kk][ii] - hlam_ub[kk][ii];
-
-        // combine multipliers for lg and ug
-        for (ii = 0; ii <= ng[kk]; ii++)
-            hlam_c[kk][ii] = hlam_lg[kk][ii] - hlam_ug[kk][ii];
-    }
 
     // return
     acados_status = return_flag;

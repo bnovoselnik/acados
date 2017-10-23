@@ -182,7 +182,6 @@ int_t ocp_qp_condensing_hpipm_calculate_memory_size(const ocp_qp_in *qp_in, void
     size += 1 * (N + 1) * sizeof(int_t *);  // hidxb_rev
     for (int_t ii = 0; ii <= N; ii++) {
         size += nb[ii]*sizeof(int_t);  // hidxb_rev
-        size += 2*(nb[ii] + ng[ii])*sizeof(double); // lam_lb lam_ub lam_lg lam_ug
     }
 
     size = (size + 63) / 64 * 64;  // make multipl of typical cache line size
@@ -327,21 +326,6 @@ char *ocp_qp_condensing_hpipm_assign_memory(const ocp_qp_in *qp_in, void *args_,
         c_ptr += nb[ii]*sizeof(int_t);
     }
 
-    // assign multipliers
-    for (int_t ii = 0; ii <= N; ii++) {
-        (*hpipm_memory)->hlam_lb[ii] = (double *) c_ptr;
-        c_ptr += nb[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_lg[ii] = (double *) c_ptr;
-        c_ptr += ng[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_ub[ii] = (double *) c_ptr;
-        c_ptr += nb[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_ug[ii] = (double *) c_ptr;
-        c_ptr += ng[ii]*sizeof(double);
-    }
-
     return c_ptr;
 }
 
@@ -376,7 +360,7 @@ int_t ocp_qp_condensing_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out,
     int_t acados_status = ACADOS_SUCCESS;
 
     // loop index
-    int_t ii, jj, kk;
+    int_t ii, jj;
 
     // extract memory
     real_t **hlam_lb = memory->hlam_lb;
@@ -421,8 +405,7 @@ int_t ocp_qp_condensing_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out,
     real_t **hx = qp_out->x;
     real_t **hu = qp_out->u;
     real_t **hpi = qp_out->pi;
-    real_t **hlam_b = qp_out->lam_b;
-    real_t **hlam_c = qp_out->lam_c;
+    real_t **hlam = qp_out->lam;
 
     // compute bounds indeces in order [u; x]
     for (ii = 0; ii <= N; ii++) {
@@ -436,12 +419,12 @@ int_t ocp_qp_condensing_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out,
     }
 
     //
-    // for (ii = 0; ii <= N; ii++) {
-    //     hlam_lb[ii] = hlam[ii];
-    //     hlam_ub[ii] = hlam[ii] + nb[ii];
-    //     hlam_lg[ii] = hlam[ii] + 2 * nb[ii];
-    //     hlam_ug[ii] = hlam[ii] + 2 * nb[ii] + ng[ii];
-    // }
+    for (ii = 0; ii <= N; ii++) {
+        hlam_lb[ii] = hlam[ii];
+        hlam_ub[ii] = hlam[ii] + nb[ii];
+        hlam_lg[ii] = hlam[ii] + 2 * nb[ii];
+        hlam_ug[ii] = hlam[ii] + 2 * nb[ii] + ng[ii];
+    }
 
     // ocp qp structure
     d_cvt_colmaj_to_ocp_qp(hA, hB, hb, hQ, hS, hR, hq, hr, hidxb_rev, hd_lb, hd_ub,
@@ -464,17 +447,6 @@ int_t ocp_qp_condensing_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out,
     // extract solution
     d_cvt_ocp_qp_sol_to_colmaj(qp, qp_sol, hu, hx, NULL, NULL, hpi,
         hlam_lb, hlam_ub, hlam_lg, hlam_ug, NULL, NULL);
-
-    // combine multipliers
-    for (kk = 0; kk <= N; kk++) {
-        // combine multipliers for lb and ub
-        for (ii = 0; ii <= nb[kk]; ii++)
-            hlam_b[kk][ii] = hlam_lb[kk][ii] - hlam_ub[kk][ii];
-
-        // combine multipliers for lg and ug
-        for (ii = 0; ii <= ng[kk]; ii++)
-            hlam_c[kk][ii] = hlam_lg[kk][ii] - hlam_ug[kk][ii];
-    }
 
     // extract iteration number
     memory->iter = ipm_workspace->iter;

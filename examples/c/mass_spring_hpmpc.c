@@ -487,19 +487,16 @@ int main() {
     double *hx[N + 1];
     double *hu[N];
     double *hpi[N];
-    double *hlam_b[N + 1];
-    double *hlam_c[N + 1];
+    double *hlam[N + 1];
 
     for (ii = 0; ii < N; ii++) {
         d_zeros(&hx[ii], nxx[ii], 1);
         d_zeros(&hu[ii], nuu[ii], 1);
         d_zeros(&hpi[ii], nxx[ii + 1], 1);
-        d_zeros(&hlam_b[ii], nbb[ii], 1);
-        d_zeros(&hlam_c[ii], ngg[ii], 1);
+        d_zeros(&hlam[ii], 2 * nbb[ii] + 2 * ngg[ii], 1);
     }
     d_zeros(&hx[N], nxx[N], 1);
-    d_zeros(&hlam_b[N], nbb[N], 1);
-    d_zeros(&hlam_c[N], ngg[N], 1);
+    d_zeros(&hlam[N], 2 * nbb[N] + 2 * ngg[N], 1);
 
     /************************************************
      * XXX initial guess
@@ -543,8 +540,7 @@ int main() {
     qp_out.x = hx;
     qp_out.u = hu;
     qp_out.pi = hpi;
-    qp_out.lam_b = hlam_b;
-    qp_out.lam_c = hlam_c;
+    qp_out.lam = hlam;
 
     /************************************************
      * solver arguments (fully sparse)
@@ -725,12 +721,10 @@ int main() {
         d_free(hx[ii]);
         d_free(hu[ii]);
         d_free(hpi[ii]);
-        d_free(hlam_b[ii]);
-        d_free(hlam_c[ii]);
+        d_free(hlam[ii]);
     }
     d_free(hx[N]);
-    d_free(hlam_b[N]);
-    d_free(hlam_c[N]);
+    d_free(hlam[N]);
 
     free(workspace);
 #if 0

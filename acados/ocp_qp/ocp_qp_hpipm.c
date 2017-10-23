@@ -140,7 +140,6 @@ int ocp_qp_hpipm_calculate_memory_size(const ocp_qp_in *qp_in, ocp_qp_hpipm_args
     size += 1 * (N + 1) * sizeof(int *);  // hidxb_rev
     for (int_t ii = 0; ii <= N; ii++) {
         size += nb[ii]*sizeof(int);  // hidxb_rev
-        size += 2*(nb[ii] + ng[ii])*sizeof(double); // lam_lb lam_ub lam_lg lam_ug
     }
 
     size = (size + 63) / 64 * 64;  // make multipl of typical cache line size
@@ -215,21 +214,6 @@ char *ocp_qp_hpipm_assign_memory(const ocp_qp_in *qp_in, ocp_qp_hpipm_args *args
     s_ptr = (s_ptr + 63) / 64 * 64;
     c_ptr = (char *)s_ptr;
 
-    // assign multipliers
-    for (int_t ii = 0; ii <= N; ii++) {
-        (*hpipm_memory)->hlam_lb[ii] = (double *) c_ptr;
-        c_ptr += nb[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_lg[ii] = (double *) c_ptr;
-        c_ptr += ng[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_ub[ii] = (double *) c_ptr;
-        c_ptr += nb[ii]*sizeof(double);
-
-        (*hpipm_memory)->hlam_ug[ii] = (double *) c_ptr;
-        c_ptr += ng[ii]*sizeof(double);
-    }
-
     // ocp qp structure
     d_create_ocp_qp(N, nx, nu, nb, ng, ns, qp, c_ptr);
     c_ptr += qp->memsize;
@@ -286,7 +270,7 @@ int ocp_qp_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     int acados_status = ACADOS_SUCCESS;
 
     // loop index
-    int ii, jj, kk;
+    int ii, jj;
 
     // extract memory
     double **hlam_lb = memory->hlam_lb;
@@ -327,8 +311,7 @@ int ocp_qp_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     double **hx = qp_out->x;
     double **hu = qp_out->u;
     double **hpi = qp_out->pi;
-    double **hlam_b = qp_out->lam_b;
-    double **hlam_c = qp_out->lam_c;
+    double **hlam = qp_out->lam;
 
     // compute bounds indeces in order [u; x]
     for (ii = 0; ii <= N; ii++) {
@@ -342,12 +325,12 @@ int ocp_qp_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     }
 
     //
-    // for (ii = 0; ii <= N; ii++) {
-    //     hlam_lb[ii] = hlam[ii];
-    //     hlam_ub[ii] = hlam[ii] + nb[ii];
-    //     hlam_lg[ii] = hlam[ii] + 2 * nb[ii];
-    //     hlam_ug[ii] = hlam[ii] + 2 * nb[ii] + ng[ii];
-    // }
+    for (ii = 0; ii <= N; ii++) {
+        hlam_lb[ii] = hlam[ii];
+        hlam_ub[ii] = hlam[ii] + nb[ii];
+        hlam_lg[ii] = hlam[ii] + 2 * nb[ii];
+        hlam_ug[ii] = hlam[ii] + 2 * nb[ii] + ng[ii];
+    }
 
     // ocp qp structure
     d_cvt_colmaj_to_ocp_qp(hA, hB, hb, hQ, hS, hR, hq, hr, hidxb_rev, hd_lb, hd_ub,
@@ -364,17 +347,6 @@ int ocp_qp_hpipm(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     // extract solution
     d_cvt_ocp_qp_sol_to_colmaj(qp, qp_sol, hu, hx, NULL, NULL, hpi,
                                hlam_lb, hlam_ub, hlam_lg, hlam_ug, NULL, NULL);
-
-    // combine multipliers
-    for (kk = 0; kk <= N; kk++) {
-        // combine multipliers for lb and ub
-        for (ii = 0; ii <= nb[kk]; ii++)
-            hlam_b[kk][ii] = hlam_lb[kk][ii] - hlam_ub[kk][ii];
-
-        // combine multipliers for lg and ug
-        for (ii = 0; ii <= ng[kk]; ii++)
-            hlam_c[kk][ii] = hlam_lg[kk][ii] - hlam_ug[kk][ii];
-    }
 
     // extract iteration number
     memory->iter = ipm_workspace->iter;

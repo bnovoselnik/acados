@@ -53,8 +53,7 @@ typedef struct {
     real_t **x;
     real_t **u;
     real_t **pi;
-    real_t **lam_b;
-    real_t **lam_c;
+    real_t **lam;
 } ocp_qp_out;
 
 typedef struct {

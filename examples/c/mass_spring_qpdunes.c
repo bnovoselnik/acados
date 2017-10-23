@@ -541,7 +541,7 @@ for (jj = 0; jj < nbu; jj++) {
     qp_out.x = hx;
     qp_out.u = hu;
     qp_out.pi = hpi;
-    // qp_out.lam = hlam; // TODO(bnovoselnik): fix this
+    qp_out.lam = hlam;
 
     /************************************************
     * solver arguments
