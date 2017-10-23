@@ -77,8 +77,6 @@ void ocp_qp_condensing_hpipm_initialize(const ocp_qp_in *qp_in, void *args_, voi
 
 void ocp_qp_condensing_hpipm_destroy(void *mem, void *work);
 
-//void int_print_tran_mat(int m, int n, int *ptr, int l);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

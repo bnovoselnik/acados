@@ -71,8 +71,9 @@ int ocp_qp_hpmpc(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
     // extract output struct members
     double **hx = qp_out->x;
     double **hu = qp_out->u;
-    double **hpi = qp_out->pi;
+    double **hpi = qp_out->pi;  // TODO(Andrea): not returning multiplers atm
     double **hlam = qp_out->lam;
+    double **ht = qp_out->t;
 
     int hpmpc_status = -1;
 
@@ -358,11 +359,13 @@ int ocp_qp_hpmpc(const ocp_qp_in *qp_in, ocp_qp_out *qp_out, void *args_, void *
             d_cvt_strvec2vec(nx[ii], &hsux[ii], nu[ii], hx[ii]);
             d_cvt_strvec2vec(nx[ii], &hspi[ii], 0, hpi[ii]);
             d_cvt_strvec2vec(2*nb[ii]+2*ng[ii], &hslam[ii], 0, hlam[ii]);
+            d_cvt_strvec2vec(2*nb[ii]+2*ng[ii], &hst[ii], 0, ht[ii]);
         }
 
         ii = N;
         d_cvt_strvec2vec(nx[ii], &hsux[ii], nu[ii], hx[ii]);
         d_cvt_strvec2vec(2*nb[ii]+2*ng[ii], &hslam[ii], 0, hlam[ii]);
+        d_cvt_strvec2vec(2*nb[ii]+2*ng[ii], &hst[ii], 0, ht[ii]);
 
         hpmpc_args->out_iter = kk;
 
