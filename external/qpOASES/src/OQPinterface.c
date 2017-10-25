@@ -103,6 +103,7 @@ OQPbenchmark_ws *OQPbenchmark_ws_createMemory( unsigned int nV, unsigned int nC 
 int OQPbenchmarkB_ws_calculateMemorySize( unsigned int nV )
 {
 	int size = 0;
+
 	size += sizeof(OQPbenchmarkB_ws);
 	size += QProblemB_calculateMemorySize(nV);        // qp
 	size += DenseMatrix_calculateMemorySize(nV, nV);  // H
@@ -158,6 +159,7 @@ OQPbenchmarkB_ws *OQPbenchmarkB_ws_createMemory( unsigned int nV )
 int OQPinterface_ws_calculateMemorySize( unsigned int nV, unsigned int nC, unsigned int nQP  )
 {
 	int size = 0;
+
 	size += sizeof(OQPinterface_ws);					  // structure itself
 	size += OQPbenchmark_ws_calculateMemorySize(nV, nC);  // qp_ws
 	size += OQPbenchmarkB_ws_calculateMemorySize(nV);     // qpB_ws

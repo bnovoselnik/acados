@@ -125,6 +125,7 @@ QProblemB_ws *QProblemB_ws_createMemory( unsigned int nV )
 int QProblemB_calculateMemorySize( unsigned int nV )
 {
 	int size = 0;
+
 	size += sizeof(QProblemB);  					   // size of structure itself
 	size += QProblemB_ws_calculateMemorySize(nV);  	   // size of the workspace
 	size += Bounds_calculateMemorySize(nV);		   	   // bounds
@@ -138,6 +139,8 @@ int QProblemB_calculateMemorySize( unsigned int nV )
 
 	size = (size + 63) / 64 * 64;  // make multiple of typical cache line size
 	size += 1 * 64;                // align once to typical cache line size
+
+	return size;
 }
 
 char *QProblemB_assignMemory( unsigned int nV, QProblemB **mem, void *raw_memory )
